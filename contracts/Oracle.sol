@@ -42,7 +42,7 @@ contract Oracle is Owned {
   }
   
   /* Events */
-  event NewPriceRequest(uint id);
+  event NewPriceRequest(uint id, bytes4 ticker, uint timestamp);
   
   /* Functions */
   
@@ -58,17 +58,16 @@ contract Oracle is Owned {
     currId++;
     priceRequests[currId] = PriceRequest(_ticker, now + timeOut, msg.sender, _callback);
     priceRequestsPending[currId] = true;
-    NewPriceRequest(currId);
+    NewPriceRequest(currId, _ticker, now);
   }
 
   function refund(uint _requestId) {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
+    
     PriceRequest request = priceRequests[_requestId];
-
     //only after timeout
     require(now >= request.timeOut);
-
     //send refund to requestor
     require(request.requestor.send(fee));
 
@@ -80,8 +79,8 @@ contract Oracle is Owned {
   function priceReply(uint _requestId, uint32 _price) onlyOwner {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
-    PriceRequest request = priceRequests[_requestId];
     
+    PriceRequest request = priceRequests[_requestId];
     //must be before timeout
     require(now < request.timeOut);
 
