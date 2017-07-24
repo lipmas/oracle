@@ -35,7 +35,7 @@ contract OptionCallContract is Mutex {
   uint public collateralRequired;
 
   modifier isPaid(){ require(msg.value >= optionPrice); _; }
-  modifier isCollateralized(){ require(msg.value >= collateralRequired); _; }
+  modifier isCollateralized(){ require(msg.value >= collateralRequired); collateralPaid += msg.value; _; }
   modifier onlyOracle(){ require(msg.sender == address(oracle)); _; }
   modifier onlyBuyer(){ require(msg.sender == buyer); _; }
   modifier onlySeller(){ require(msg.sender == seller); _; }
