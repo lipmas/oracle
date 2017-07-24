@@ -12,12 +12,20 @@ contract TestOracle{
    
   }
 
-  function getPrice(bytes4 _ticker){
-    oracle.makePriceRequest(_ticker, this.getPriceCallback);
+  function getPrice(bytes4 _ticker) payable{
+    oracle.makePriceRequest.value(msg.value)(_ticker, this.getPriceCallback);
   }
 
-  function getPriceCallback(uint32 _price) {
+  function getPriceCallback(bool success, uint32 _price) payable{
     require(msg.sender == address(oracle));
-    thePrice = _price;
+
+    if(success){
+      //success code path
+      thePrice = _price;
+    }
+    else{
+      //error or timeout occurred
+      //msg.value has the returned fee
+    }
   }
 }
