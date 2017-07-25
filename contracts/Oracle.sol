@@ -18,6 +18,7 @@ contract Oracle is Owned {
   /* type definitions */
   struct PriceRequest{
     bytes4 ticker;
+    uint timestamp;
     uint timeOut;
     address requestor;
     function (bool success, uint32 price) external payable callback;
@@ -40,6 +41,16 @@ contract Oracle is Owned {
     require(msg.value >= fee);
     _;
   }
+
+  modifier onlyPast(uint timestamp) {
+    require(timestamp <= now);
+    _;
+  }
+
+  modifier onlyFuture(uint timestamp) {
+    require(timestamp > now);
+    _;
+  }
   
   /* Events */
   event NewPriceRequest(uint id, bytes4 ticker, uint timestamp);
@@ -53,19 +64,27 @@ contract Oracle is Owned {
     maxGas = _maxGas;
     timeOut = _timeOut;
   }
-  
-  function makePriceRequest(bytes4 _ticker, function(bool success, uint32 price) external payable _callback) payable isPaid{
+
+  function makePriceRequest(bytes4 _ticker, uint timestamp, function(bool, uint32) external payable _callback) payable isPaid onlyPast(timestamp) returns (uint currId) {
     currId++;
-    priceRequests[currId] = PriceRequest(_ticker, now + timeOut, msg.sender, _callback);
+    priceRequests[currId] = PriceRequest(_ticker, timestamp,  now + timeOut, msg.sender, _callback);
     priceRequestsPending[currId] = true;
     NewPriceRequest(currId, _ticker, now);
   }
-
+  
+  function makeFuturePriceRequest(bytes4 _ticker, uint timestamp, function(bool, uint32) external payable _callback) payable isPaid onlyFuture(timestamp) returns (uint currId){
+    currId++;
+    //timeout clock doesnt start until timestamp is reached
+    priceRequests[currId] = PriceRequest(_ticker, timestamp,  timestamp + timeOut, msg.sender, _callback);
+    priceRequestsPending[currId] = true;
+    NewPriceRequest(currId, _ticker, now);
+  }
   function refund(uint _requestId) {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
     
     PriceRequest request = priceRequests[_requestId];
+    
     //only after timeout
     require(now >= request.timeOut);
 
@@ -78,8 +97,8 @@ contract Oracle is Owned {
     request.callback.gas(maxGas).value(fee)(false, 0);
 
     //clean up request
-    delete priceRequestsPending[_requestId];
-    delete priceRequests[_requestId];
+    //delete priceRequestsPending[_requestId];
+    //delete priceRequests[_requestId];
   }
   
   function priceReply(uint _requestId, uint32 _price) onlyOwner {
@@ -87,6 +106,7 @@ contract Oracle is Owned {
     require(priceRequestsPending[_requestId]);
     
     PriceRequest request = priceRequests[_requestId];
+    
     //must be before timeout
     require(now < request.timeOut);
 
@@ -98,7 +118,7 @@ contract Oracle is Owned {
     request.callback.gas(maxGas)(true, _price);
 
     //clean up request
-    delete priceRequestsPending[_requestId];
-    delete priceRequests[_requestId];
+    //delete priceRequestsPending[_requestId];
+    //delete priceRequests[_requestId];
   }
 }
