@@ -69,23 +69,21 @@ contract OptionCallContract {
     else{
       if(_price < strikePrice){
 	uint diff = strikePrice - _price;
-	uint payAmount = max(diff*numberContracts, collateralRequired);
-	
+	uint payAmount = max(diff*numberContracts, collateralRequired);	
 	//pay the buyer
 	buyer.transfer(payAmount);
-	
-	//pay the seller and refund unused collateral
-	seller.transfer(collateralPaid - payAmount + optionPrice);
-      }
+      }      
+      //pay the seller and refund unused collateral
+      seller.transfer(collateralPaid - payAmount + optionPrice);
     }
   }
 
-  function optionExpiredRefund() onlySeller onlyAfterExpiry {
+  function optionExpired() onlySeller onlyAfterExpiry {
     seller.transfer(collateralPaid + optionPrice);
   }
   
   function errorRefund() internal {
-    buyer.transfer(optionPrice);
-    seller.transfer(collateralPaid);
+    buyer.transfer(optionPrice + oracleFee/2);
+    seller.transfer(collateralPaid + oracleFee/2);
   }
 }
