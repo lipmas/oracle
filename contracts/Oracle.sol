@@ -26,7 +26,7 @@ contract Oracle is Owned {
     uint timestamp;
     uint timeOut;
     address requestor;
-    function (bool success, uint32 price) external payable callback;
+    function (bool,uint32) external payable callback;
   }
 
   /* state */
@@ -71,8 +71,18 @@ contract Oracle is Owned {
     timeOut = _timeOut;
   }
 
-  function makePriceRequest(bytes4 _ticker, uint timestamp, function(bool, uint32) external payable _callback) payable isPaid onlyPast(timestamp) returns (uint currId) {
-    currId++;
+ 
+  function getPriceRequest(uint id) returns(bytes4 ticker, uint timestamp, uint timeout, address requestor) {
+    PriceRequest storage req = priceRequests[id];
+    ticker = req.ticker;
+    timestamp = req.timestamp;
+    timeout = req.timeOut;
+    requestor = req.requestor;
+  }
+
+  
+  function makePriceRequest(bytes4 _ticker, uint timestamp, function(bool, uint32) external payable _callback) payable isPaid onlyPast(timestamp) returns (uint newId) {
+    newId = ++currId;
     priceRequests[currId] = PriceRequest(_ticker, timestamp, block.number + timeOut, msg.sender, _callback);
     priceRequestsPending[currId] = true;
     NewPriceRequest(currId, _ticker, timestamp, block.number + timeOut);
@@ -92,7 +102,7 @@ contract Oracle is Owned {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
     
-    PriceRequest request = priceRequests[_requestId];
+    PriceRequest storage request = priceRequests[_requestId];
     
     //must be before timeout
     require(block.number < request.timeOut);
@@ -113,7 +123,7 @@ contract Oracle is Owned {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
     
-    PriceRequest request = priceRequests[_requestId];
+    PriceRequest storage request = priceRequests[_requestId];
     
     //only after timeout
     require(block.number >= request.timeOut);

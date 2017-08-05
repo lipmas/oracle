@@ -1,3 +1,4 @@
+pragma solidity ^0.4.13;
 import "truffle/Assert.sol";
 
 /*
@@ -26,11 +27,10 @@ contract ThrowProxy {
 // Contract you're testing
 contract Thrower {
   function doThrow() {
-    throw;
+    assert(false);
   }
 
   function doNoThrow() {
-    //
   }
 }
 
