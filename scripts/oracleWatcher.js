@@ -1,6 +1,5 @@
 //Run this file within the truffle execution environment:
 // truffle exec <filename>.js
-
 var oracle, client;
 module.exports = function(callback) {
     //import truffle contract abstractions
@@ -12,7 +11,6 @@ module.exports = function(callback) {
     //filterForCurrentBalance();
     Oracle.deployed().then(function(instance){
 	oracle = instance;
-	//setup filters to watch
 	return SimpleOracleClient.deployed();
     }).then(function(instance){
 	client = instance;
@@ -23,18 +21,20 @@ module.exports = function(callback) {
 
 function test(){
     var oracleFee;
+    var test_price = 123456;
     oracle.fee.call().then(function(fee){
 	oracleFee = fee.toNumber();
 	client.getPrice("IBM", {value: oracleFee}).then(function(trxObj) {
-	    console.log(trxObj);
-	    /*
-	    //return oracle.priceReply(1, test_price);
-	    }).then(function(trxObj) {
+	    //console.log(trxObj);
+	    return oracle.currId.call();
+	}).then(function(id){
+	    let currId = id; 
+	    return oracle.priceReply(currId, test_price);
+	}).then(function(trxObj) {
+	    //console.log(trxObj);
 	    return client.thePrice.call();
-	    }).then(function(price) {
-	    */
-	}).catch(function(err){
-	    console.log(err);
+	}).then(function(price) {
+	    //console.log("Price returned from oracle is: ", price.toNumber());
 	});
     });
 }
@@ -42,6 +42,7 @@ function test(){
 function setupFilters(){
     //getPreviousPriceRequests(oracle, 0);
     watchForPriceRequests(oracle);
+    watchForClientPriceReturned();
 }
 
 //gets all previous price requests from startBlock
@@ -81,6 +82,20 @@ function logPriceRequest(req){
     console.log("Ticker is: ", ticker);
     console.log("Timestamp is: ", timestamp.toString());
     console.log("Timeout is: ", timeout);
+}
+
+function watchForClientPriceReturned(){
+    priceReturnedFilter = client.PriceReturned();
+    priceReturnedFilter.watch(function(error, result){
+	if(!error){
+	    //console.log(result);
+	    var price = result.args.price.toNumber();
+	    console.log("Price returned from oracle is: ", price);
+	}
+	else{
+	    console.log(error);
+	}
+    });
 }
 
 function filterForCurrentBalance(){

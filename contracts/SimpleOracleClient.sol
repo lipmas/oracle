@@ -7,6 +7,8 @@ contract SimpleOracleClient{
   Oracle public oracle;
   uint32 public thePrice;
   bool   public errorStatus;  
+
+  event PriceReturned(uint32 price);
   
   function SimpleOracleClient(address _oracleAddr){
    oracle = Oracle(_oracleAddr);   
@@ -23,6 +25,7 @@ contract SimpleOracleClient{
       //success code path
       errorStatus = false;
       thePrice = _price;
+      PriceReturned(_price);
     }
     else{
       //error or timeout occurred
