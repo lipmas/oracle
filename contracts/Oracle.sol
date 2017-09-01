@@ -1,9 +1,13 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.13;
 
 /*
- TODO: 
+ TODO:
+ -redesign callback gas usage
  -make gas stipend required as part of fee and possible allow calling contract to specify
  an amount of gas (and somehow determine ahead of time gas price) needed for subcall, refund unused stipend
+
+ -allow different price currency options
+ -have a precision variable so price can be given to an arbitrary number of decimals places (returned as int)
 */
 
 contract Owned {
@@ -30,8 +34,8 @@ contract Oracle is Owned {
   }
 
   /* state */
-  
-  //constant
+
+  //set on construction
   uint public fee;
   uint public timeOut;
   uint public maxGas;
@@ -63,23 +67,13 @@ contract Oracle is Owned {
   /* Functions */
   
   //constructor
-  /* @param _timeout: time out in blocks */
+  /* _timeout: time out in blocks */
   function Oracle(uint _fee, uint _maxGas, uint _timeOut){
     currId = 0;
     fee = _fee;
     maxGas = _maxGas;
     timeOut = _timeOut;
   }
-
- 
-  function getPriceRequest(uint id) returns(bytes4 ticker, uint timestamp, uint timeout, address requestor) {
-    PriceRequest storage req = priceRequests[id];
-    ticker = req.ticker;
-    timestamp = req.timestamp;
-    timeout = req.timeOut;
-    requestor = req.requestor;
-  }
-
   
   function makePriceRequest(bytes4 _ticker, uint timestamp, function(bool, uint32) external payable _callback) payable isPaid onlyPast(timestamp) returns (uint newId) {
     newId = ++currId;
@@ -97,7 +91,10 @@ contract Oracle is Owned {
     NewPriceRequest(currId, _ticker, timestamp, block.number + timeOut);
   }
   */
-  
+
+  //oracle owner provides the price
+  //price should be denominated in ether (wei)
+  //So conversion from USD => wei must be done before sending
   function priceReply(uint _requestId, uint32 _price) onlyOwner {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
@@ -119,7 +116,7 @@ contract Oracle is Owned {
     //delete priceRequests[_requestId];
   }
 
-    function timeoutRefund(uint _requestId) {
+  function timeoutRefund(uint _requestId) {
     //check that id exists and hasnt been processed yet
     require(priceRequestsPending[_requestId]);
     
@@ -139,6 +136,5 @@ contract Oracle is Owned {
     //clean up request
     //delete priceRequestsPending[_requestId];
     //delete priceRequests[_requestId];
-  }
-
+  }  
 }

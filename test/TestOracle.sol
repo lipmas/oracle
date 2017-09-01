@@ -3,15 +3,17 @@ pragma solidity ^0.4.11;
 //truffle
 import "truffle/Assert.sol";
 import "truffle/DeployedAddresses.sol";
+
 //helper test contracts
 import "./ThrowProxy.sol";
+
 //contracts
 import "../contracts/Oracle.sol";
 import "../contracts/SimpleOracleClient.sol";
 
 contract TestOracle {
   //truffle test will fund this contract after deployed
-  uint public initialBalance = 50 ether;
+  uint public initialBalance = 10 ether;
 
   uint defaultOracleFee = 100 wei;
   uint defaultOracleTimeout = 10;
@@ -22,9 +24,10 @@ contract TestOracle {
 
   uint currTime;
 
+  Oracle deployedOracle;
+  
   Oracle oracle1;  
   SimpleOracleClient client1;
-  Oracle deployedOracle;
   
   function beforeAll(){
     //Assert.equal(true, false, "This gets called when:");
@@ -69,7 +72,8 @@ contract TestOracle {
     //must type cast price to uint256 because Assert library only handles uint256 right now
     Assert.equal(uint(price), 100, "Price should be 100 in client's state"); 
   }
-  
+
+  //prepare the oracle timeout test with an oracle with timeout of 1 block
   function testOracleTimeoutSetup() {
     uint timeout = 1;  
     oracle1 = new Oracle(defaultOracleFee, defaultMaxGas, timeout);

@@ -9,18 +9,25 @@ source: http://truffleframework.com/tutorials/testing-for-throws-in-solidity-tes
 contract ThrowProxy {
   address public target;
   bytes data;
-
+  uint value;
+  
   function ThrowProxy(address _target) {
     target = _target;
   }    
 
   //prime the data using the fallback function.
-  function() {
+  function() payable {
     data = msg.data;
+    value = msg.value;
   }
 
   function execute() returns (bool) {
-    return target.call(data);
+    if(value > 0){
+      return target.call.value(value)(data);
+    }
+    else {
+      return target.call(data);
+    }
   }
 }
 

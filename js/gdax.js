@@ -9,7 +9,7 @@ function addHeaders(obj){
     }
 }
 
-const supportedProducts =  ['BTC' ,'ETH'];
+const supportedProducts =  ['BTC' ,'ETH', 'LTC'];
 
 function getLastPrice(id){
     var fullId = id + '-USD';    
